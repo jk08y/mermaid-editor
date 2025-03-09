@@ -1,7 +1,6 @@
 // src/components/DiagramRenderer.tsx
-import { useEffect, useState, useRef } from 'react';
-import { useTheme } from '../hooks/useTheme';
-import { initializeMermaid, renderMermaidDiagram } from '../utils/mermaidCompat';
+import React, { useEffect, useRef } from 'react';
+import mermaid from 'mermaid';
 
 interface DiagramRendererProps {
   code: string;
@@ -9,67 +8,45 @@ interface DiagramRendererProps {
 }
 
 const DiagramRenderer: React.FC<DiagramRendererProps> = ({ code, id = 'mermaid-diagram' }) => {
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
-  const uniqueId = useRef(`mermaid-${Math.random().toString(36).substring(2, 11)}`);
 
-  // Initialize mermaid with theme
   useEffect(() => {
-    initializeMermaid(theme);
-  }, [theme]);
+    // Initialize mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
+      securityLevel: 'loose',
+    });
 
-  // Render diagram whenever code changes
-  useEffect(() => {
-    const renderDiagram = async () => {
-      if (!code.trim()) {
-        setError(null);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
+    // Only try to render if there's code and the container exists
+    if (code && containerRef.current) {
       try {
-        await renderMermaidDiagram(code, uniqueId.current, containerRef.current);
-      } catch (err) {
-        console.error('Mermaid render error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
-      } finally {
-        setIsLoading(false);
+        // Clear previous content
+        containerRef.current.innerHTML = '';
+        
+        // Create a new element for mermaid to render into
+        const el = document.createElement('div');
+        el.id = id;
+        containerRef.current.appendChild(el);
+        
+        // Render the diagram
+        mermaid.render(id, code).then(({ svg }) => {
+          if (containerRef.current) {
+            containerRef.current.innerHTML = svg;
+          }
+        });
+      } catch (error) {
+        console.error('Error rendering mermaid diagram:', error);
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '<div class="p-4 text-red-500">Failed to render diagram</div>';
+        }
       }
-    };
-
-    // Add a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      renderDiagram();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [code]);
+    }
+  }, [code, id]);
 
   return (
-    <div className="relative rounded-md overflow-hidden border border-gray-300 dark:border-dark-border bg-white dark:bg-dark-surface">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-dark-surface bg-opacity-80 dark:bg-opacity-80 z-10">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-500 border-t-transparent"></div>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md">
-          <h3 className="font-semibold mb-2">Error rendering diagram:</h3>
-          <pre className="whitespace-pre-wrap text-sm font-mono overflow-auto max-h-64">
-            {error}
-          </pre>
-        </div>
-      )}
-
-      <div 
-        ref={containerRef}
-        className="p-4 min-h-[200px] flex items-center justify-center overflow-auto"
-      />
+    <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden bg-white dark:bg-gray-800">
+      <div ref={containerRef} className="p-4 min-h-[200px] flex items-center justify-center"></div>
     </div>
   );
 };
