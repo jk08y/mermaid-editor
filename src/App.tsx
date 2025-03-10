@@ -123,7 +123,7 @@ const Footer: React.FC = () => {
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
             </svg>
             <span className="text-lg font-bold text-neutral-900 dark:text-white">
-              Mermaid Editor Pro
+              Cs5 Pro
             </span>
           </div>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400">
@@ -133,7 +133,7 @@ const Footer: React.FC = () => {
             <a href="https://github.com/jk08y/mermaid-editor" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 dark:hover:text-primary-400">
               GitHub
             </a>
-            <span>© {new Date().getFullYear()} Mermaid Editor Pro</span>
+            <span>© {new Date().getFullYear()} Cs5 Pro</span>
           </div>
         </div>
       </div>
