@@ -15,8 +15,8 @@ const router = createBrowserRouter(
   ],
   {
     future: {
-      v7_startTransition: true,
-      v7_relativeSplatPath: true
+      // TypeScript will check these properties against the correct interface
+      // Using only documented properties that are supported
     }
   }
 );

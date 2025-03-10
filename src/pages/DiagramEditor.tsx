@@ -1,5 +1,5 @@
 // src/pages/DiagramEditor.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import CodeEditor from '../components/Editor';
 import DiagramRenderer from '../components/DiagramRenderer';
@@ -7,31 +7,30 @@ import { useDiagramStorage } from '../hooks/useDiagramStorage';
 import { generateThumbnail } from '../utils/exportDiagram';
 import { useTheme } from '../hooks/useTheme';
 
-// Import templates and diagram types
-import { DiagramTemplate } from '../types';
+// Define types for layout
+type LayoutType = 'split' | 'stacked' | 'editor-focus' | 'preview-focus';
 
 const DiagramEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme } = useTheme();
   const { getDiagram, saveDiagram, isLoading } = useDiagramStorage();
   
   // Editor state
   const [code, setCode] = useState('');
   const [title, setTitle] = useState('Untitled Diagram');
   const [autoSave, setAutoSave] = useState(true);
-  const [lastSaved, setLastSaved] = useState(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState('saved');
   
   // Layout settings
-  const [layout, setLayout] = useState('split');
+  const [layout, setLayout] = useState<LayoutType>('split');
   const [showTemplates, setShowTemplates] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   
   // Reference for auto-save timer
-  const autoSaveTimerRef = useRef(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Load diagram data on initial render
   useEffect(() => {
@@ -68,7 +67,7 @@ const DiagramEditor = () => {
     };
 
     loadInitialData();
-  }, [id]); // Only run when id changes
+  }, [id, getDiagram, navigate, location.search]); // Dependencies fixed
   
   // Set default diagram
   const setDefaultDiagram = () => {
@@ -162,17 +161,17 @@ const DiagramEditor = () => {
         autoSaveTimerRef.current = null;
       }
     };
-  }, [isDirty, autoSave]); // Only re-run when these values change
+  }, [isDirty, autoSave]); // handleSave will be added in useCallback
   
   // Handle diagram changes
-  const handleCodeChange = useCallback((newCode) => {
+  const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
     setIsDirty(true);
     setSaveStatus('unsaved');
   }, []);
   
   // Handle title changes
-  const handleTitleChange = useCallback((e) => {
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
     setIsDirty(true);
     setSaveStatus('unsaved');
@@ -242,7 +241,7 @@ const DiagramEditor = () => {
   }, []);
   
   // Apply template
-  const applyTemplate = useCallback((templateCode) => {
+  const applyTemplate = useCallback((templateCode: string) => {
     if (isDirty) {
       if (window.confirm('You have unsaved changes. Apply template anyway?')) {
         setCode(templateCode);
@@ -259,7 +258,7 @@ const DiagramEditor = () => {
   
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       // Save: Ctrl/Cmd + S
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -296,7 +295,6 @@ const DiagramEditor = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleNew, handleSave, toggleLayout]);
-  
   // Render loading state
   if (isLoading) {
     return (

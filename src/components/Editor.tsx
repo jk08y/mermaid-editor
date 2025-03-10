@@ -1,9 +1,21 @@
 // src/components/Editor.tsx
-import React, { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import { useTheme } from '../hooks/useTheme';
+import type { editor } from 'monaco-editor';
 
-const CodeEditor = ({ 
+interface CodeEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  height?: string;
+  readOnly?: boolean;
+  minimap?: boolean;
+  lineNumbers?: 'on' | 'off' | 'relative';
+  fontSize?: number;
+  wordWrap?: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
+}
+
+const CodeEditor: React.FC<CodeEditorProps> = ({ 
   value, 
   onChange, 
   height = '400px',
@@ -14,11 +26,11 @@ const CodeEditor = ({
   wordWrap = 'on'
 }) => {
   const { theme } = useTheme();
-  const editorRef = useRef(null);
-  const monacoRef = useRef(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof import('monaco-editor') | null>(null);
   
   // Configure Monaco editor when it mounts
-  const handleEditorDidMount = (editor, monaco) => {
+  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
     
@@ -182,7 +194,7 @@ const CodeEditor = ({
         language="mermaid"
         defaultValue={value}
         theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
-        onChange={onChange}
+        onChange={(value) => onChange(value || '')}
         onMount={handleEditorDidMount}
         options={{
           readOnly,

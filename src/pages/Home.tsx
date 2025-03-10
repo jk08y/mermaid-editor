@@ -1,5 +1,5 @@
 // src/pages/Home.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Component, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { DiagramTemplate } from '../types';
 import { useDiagramStorage } from '../hooks/useDiagramStorage';
@@ -7,17 +7,27 @@ import mermaid from 'mermaid';
 import { useTheme } from '../hooks/useTheme';
 
 // Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error, errorInfo: null };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error("Error caught by boundary:", error, errorInfo);
   }
 
@@ -28,7 +38,7 @@ class ErrorBoundary extends React.Component {
           <h3 className="text-xl font-semibold text-error-700 dark:text-error-300 mb-2">Something went wrong</h3>
           <p className="text-error-600 dark:text-error-400 mb-4">The application encountered an unexpected error.</p>
           <button 
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
             className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
           >
             Try Again
@@ -42,15 +52,20 @@ class ErrorBoundary extends React.Component {
 }
 
 // Safe Template Preview Component
-const TemplatePreview = ({ template, id }) => {
-  const previewRef = useRef(null);
+interface TemplatePreviewProps {
+  template: string;
+  id: string;
+}
+
+const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, id }) => {
+  const previewRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
   const { theme } = useTheme();
 
   useEffect(() => {
     let isMounted = true;
-    let tempElement = null;
+    let tempElement: HTMLDivElement | null = null;
 
     const renderPreview = async () => {
       if (!previewRef.current || !isMounted) return;
@@ -68,8 +83,10 @@ const TemplatePreview = ({ template, id }) => {
         });
         
         // Clear previous content safely
-        while (previewRef.current.firstChild) {
-          previewRef.current.removeChild(previewRef.current.firstChild);
+        if (previewRef.current) {
+          while (previewRef.current.firstChild) {
+            previewRef.current.removeChild(previewRef.current.firstChild);
+          }
         }
         
         // Create a temporary container
@@ -104,10 +121,10 @@ const TemplatePreview = ({ template, id }) => {
             }
           }
         }
-      } catch (error) {
-        console.error(`Error rendering preview for ${id}:`, error);
+      } catch (err) {
+        console.error(`Error rendering preview for ${id}:`, err);
         if (isMounted && previewRef.current) {
-          setError(error.message);
+          setError(err instanceof Error ? err : new Error(String(err)));
           // Clear content safely
           while (previewRef.current.firstChild) {
             previewRef.current.removeChild(previewRef.current.firstChild);
@@ -149,10 +166,10 @@ const TemplatePreview = ({ template, id }) => {
 };
 
 // Main home component
-const Home = () => {
+const Home: React.FC = () => {
   const { diagrams } = useDiagramStorage();
   const [activeDemo, setActiveDemo] = useState(0);
-  const previewRef = useRef(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const [previewRendered, setPreviewRendered] = useState(false);
   const [activeCategory, setActiveCategory] = useState(0);
@@ -160,7 +177,7 @@ const Home = () => {
   // Example diagram templates
   const templates = [
     {
-      type: 'flowchart',
+      type: 'flowchart' as const,
       name: 'Flowchart',
       description: 'Visualize workflow processes with decision points',
       template: `flowchart TD
@@ -172,7 +189,7 @@ const Home = () => {
     Process3 --> End`
     },
     {
-      type: 'sequenceDiagram',
+      type: 'sequenceDiagram' as const,
       name: 'Sequence Diagram',
       description: 'Show interactions between systems over time',
       template: `sequenceDiagram
@@ -186,7 +203,7 @@ const Home = () => {
     System-->>User: Display results`
     },
     {
-      type: 'classDiagram',
+      type: 'classDiagram' as const,
       name: 'Class Diagram',
       description: 'Model object-oriented structures and relationships',
       template: `classDiagram
@@ -207,7 +224,7 @@ const Home = () => {
     Animal <|-- Cat`
     },
     {
-      type: 'stateDiagram',
+      type: 'stateDiagram' as const,
       name: 'State Diagram',
       description: 'Represent system states and transitions',
       template: `stateDiagram-v2
@@ -219,7 +236,7 @@ const Home = () => {
     Error --> Idle: Retry`
     },
     {
-      type: 'erDiagram',
+      type: 'entityRelationshipDiagram' as const,
       name: 'ER Diagram',
       description: 'Model database entities and relationships',
       template: `erDiagram
@@ -240,7 +257,7 @@ const Home = () => {
     }`
     },
     {
-      type: 'gantt',
+      type: 'gantt' as const,
       name: 'Gantt Chart',
       description: 'Plan and track project timelines',
       template: `gantt
@@ -265,11 +282,11 @@ const Home = () => {
   const diagramCategories = {
     'Process Flows': templates.filter(t => ['flowchart', 'stateDiagram'].includes(t.type)),
     'System Architecture': templates.filter(t => ['sequenceDiagram', 'classDiagram'].includes(t.type)),
-    'Data Modeling': templates.filter(t => ['erDiagram'].includes(t.type)),
+    'Data Modeling': templates.filter(t => ['entityRelationshipDiagram'].includes(t.type)),
     'Project Planning': templates.filter(t => ['gantt'].includes(t.type))
   };
 
-  const createNewWithTemplate = (template) => {
+  const createNewWithTemplate = (template: string) => {
     return `/editor?template=${encodeURIComponent(template)}`;
   };
   
@@ -287,15 +304,17 @@ const Home = () => {
   // Render the current demo preview
   useEffect(() => {
     let isMounted = true;
-    let tempElement = null;
+    let tempElement: HTMLDivElement | null = null;
     
     const renderPreview = async () => {
       if (!previewRef.current || !isMounted) return;
       
       try {
         // Clear previous content safely
-        while (previewRef.current.firstChild) {
-          previewRef.current.removeChild(previewRef.current.firstChild);
+        if (previewRef.current) {
+          while (previewRef.current.firstChild) {
+            previewRef.current.removeChild(previewRef.current.firstChild);
+          }
         }
         
         // Create a unique ID for the diagram
@@ -428,7 +447,13 @@ const Home = () => {
   ];
 
   // Simple text typing effect component
-  const TypewriterEffect = ({ text, typingSpeed = 50, startDelay = 0 }) => {
+  interface TypewriterEffectProps {
+    text: string;
+    typingSpeed?: number;
+    startDelay?: number;
+  }
+
+  const TypewriterEffect: React.FC<TypewriterEffectProps> = ({ text, typingSpeed = 50, startDelay = 0 }) => {
     const [displayText, setDisplayText] = useState('');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isTyping, setIsTyping] = useState(false);
@@ -637,8 +662,8 @@ const Home = () => {
               </p>
             </div>
 
-{/* Category Tabs */}
-<div className="mb-8 overflow-x-auto pb-2">
+            {/* Category Tabs */}
+            <div className="mb-8 overflow-x-auto pb-2">
               <div className="flex space-x-2">
                 {Object.keys(diagramCategories).map((category, index) => (
                   <button
@@ -784,7 +809,6 @@ const Home = () => {
                   Get Started Now
                 </Link>
               </div>
-
             </div>
           </div>
         </section>
