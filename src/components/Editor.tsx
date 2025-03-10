@@ -210,7 +210,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           },
           automaticLayout: true,
           padding: { top: 8 },
-          renderIndentGuides: true,
+          guides: {
+            indentation: true,
+          },
           bracketPairColorization: {
             enabled: true,
           },
