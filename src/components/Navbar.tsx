@@ -1,12 +1,10 @@
 // src/components/Navbar.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../hooks/useTheme';
 import ThemeToggle from './ThemeToggle';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
-  const { theme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
