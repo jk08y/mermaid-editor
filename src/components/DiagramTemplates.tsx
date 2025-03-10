@@ -1,5 +1,5 @@
 // src/components/DiagramTemplates.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DiagramTemplate } from '../types';
 
 interface DiagramTemplatesProps {
@@ -131,7 +131,7 @@ const DiagramTemplates: React.FC<DiagramTemplatesProps> = ({ onSelect, onClose }
     ],
     'Entity Relationship': [
       {
-        type: 'erDiagram',
+        type: 'entityRelationshipDiagram',
         name: 'Simple ER Diagram',
         description: 'Basic entities and relationships',
         template: `erDiagram
@@ -154,7 +154,7 @@ const DiagramTemplates: React.FC<DiagramTemplatesProps> = ({ onSelect, onClose }
     }`
       },
       {
-        type: 'erDiagram',
+        type: 'entityRelationshipDiagram',
         name: 'Complex Database Schema',
         description: 'More entities and relationships',
         template: `erDiagram
@@ -345,7 +345,7 @@ const DiagramTemplates: React.FC<DiagramTemplatesProps> = ({ onSelect, onClose }
     ],
     'Misc Diagrams': [
       {
-        type: 'pie',
+        type: 'pieChart',
         name: 'Pie Chart',
         description: 'Simple data visualization',
         template: `pie title Project Resource Allocation

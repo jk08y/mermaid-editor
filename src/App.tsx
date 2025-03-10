@@ -10,42 +10,33 @@ const Home = lazy(() => import('./pages/Home'));
 const DiagramEditor = lazy(() => import('./pages/DiagramEditor'));
 const SavedDiagrams = lazy(() => import('./pages/SavedDiagrams'));
 
-// Error Boundary props and state types
+// Global Error Boundary
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: any;
+}
+
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: React.ErrorInfo | null;
-}
-
-// Global Error Boundary
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { 
-      hasError: false, 
-      error: null, 
-      errorInfo: null 
-    };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { 
-      hasError: true, 
-      error, 
-      errorInfo: null 
-    };
+    return { hasError: true, error, errorInfo: null };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  componentDidCatch(error: Error, errorInfo: any): void {
     this.setState({ errorInfo });
     console.error("Error caught by boundary:", error, errorInfo);
   }
 
-  render(): ReactNode {
+  render() {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12 bg-white dark:bg-dark-background">
@@ -81,13 +72,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// Loading component props
+// Loading component with different variants
 interface LoadingProps {
   type?: 'page' | 'component';
 }
 
-// Loading component with different variants
-const Loading = ({ type = 'page' }: LoadingProps) => {
+const Loading: React.FC<LoadingProps> = ({ type = 'page' }) => {
   if (type === 'component') {
     return (
       <div className="flex justify-center items-center p-8">
@@ -105,7 +95,7 @@ const Loading = ({ type = 'page' }: LoadingProps) => {
 };
 
 // Not Found page
-const NotFound = () => {
+const NotFound: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center h-[60vh] px-4 text-center">
       <svg className="w-16 h-16 text-neutral-400 dark:text-neutral-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,7 +113,7 @@ const NotFound = () => {
 };
 
 // Footer component
-const Footer = () => {
+const Footer: React.FC = () => {
   return (
     <footer className="bg-neutral-50 dark:bg-dark-surface py-6 border-t border-neutral-200 dark:border-dark-border">
       <div className="container mx-auto px-4">
@@ -160,12 +150,14 @@ function App() {
     initializeMermaid(theme);
 
     // Add scroll restoration
-    if ('scrollRestoration' in window.history) {
+    if (typeof window !== 'undefined' && window.history) {
       window.history.scrollRestoration = 'auto';
     }
     
     // Add smooth scrolling
-    document.documentElement.style.scrollBehavior = 'smooth';
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.style.scrollBehavior = 'smooth';
+    }
   }, [theme]);
 
   return (
