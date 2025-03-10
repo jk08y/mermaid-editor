@@ -1,7 +1,6 @@
 // src/pages/Home.tsx
-import React, { useState, useEffect, useRef, Component, ReactNode } from 'react';
+import { useState, useEffect, useRef, Component, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { DiagramTemplate } from '../types';
 import { useDiagramStorage } from '../hooks/useDiagramStorage';
 import mermaid from 'mermaid';
 import { useTheme } from '../hooks/useTheme';
@@ -60,7 +59,8 @@ interface TemplatePreviewProps {
 const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, id }) => {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  // Using underscore to indicate an unused variable that's required for the state setter
+  const [_, setError] = useState<Error | null>(null);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -622,9 +622,8 @@ const Home: React.FC = () => {
             </div>
           </div>
         </section>
-
-        {/* Features section */}
-        <section className="py-16 px-4">
+{/* Features section */}
+<section className="py-16 px-4">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">Key Features</h2>
