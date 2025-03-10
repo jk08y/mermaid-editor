@@ -1,6 +1,6 @@
 // src/App.tsx
 import { Route, Routes } from 'react-router-dom';
-import { useEffect, Suspense, lazy, Component } from 'react';
+import { useEffect, Suspense, lazy, Component, ReactNode } from 'react';
 import Navbar from './components/Navbar';
 import { useTheme } from './hooks/useTheme';
 import { initializeMermaid } from './utils/mermaidCompat';
@@ -10,23 +10,42 @@ const Home = lazy(() => import('./pages/Home'));
 const DiagramEditor = lazy(() => import('./pages/DiagramEditor'));
 const SavedDiagrams = lazy(() => import('./pages/SavedDiagrams'));
 
+// Error Boundary props and state types
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+}
+
 // Global Error Boundary
-class ErrorBoundary extends Component {
-  constructor(props) {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorInfo: null 
+    };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { 
+      hasError: true, 
+      error, 
+      errorInfo: null 
+    };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     this.setState({ errorInfo });
     console.error("Error caught by boundary:", error, errorInfo);
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12 bg-white dark:bg-dark-background">
@@ -62,8 +81,13 @@ class ErrorBoundary extends Component {
   }
 }
 
+// Loading component props
+interface LoadingProps {
+  type?: 'page' | 'component';
+}
+
 // Loading component with different variants
-const Loading = ({ type = 'page' }) => {
+const Loading = ({ type = 'page' }: LoadingProps) => {
   if (type === 'component') {
     return (
       <div className="flex justify-center items-center p-8">
@@ -136,7 +160,9 @@ function App() {
     initializeMermaid(theme);
 
     // Add scroll restoration
-    window.history.scrollRestoration = 'auto';
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'auto';
+    }
     
     // Add smooth scrolling
     document.documentElement.style.scrollBehavior = 'smooth';

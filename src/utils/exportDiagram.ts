@@ -30,6 +30,7 @@ export const exportDiagram = async (
 
     // For PNG export, use canvas
     if (options.format === 'png') {
+      // Create canvas
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
@@ -37,10 +38,11 @@ export const exportDiagram = async (
         throw new Error('Could not get canvas context');
       }
       
-      // Set canvas dimensions with scaling factor
+      // Get SVG dimensions
       const svgWidth = svgElement.viewBox.baseVal.width || svgElement.getBoundingClientRect().width;
       const svgHeight = svgElement.viewBox.baseVal.height || svgElement.getBoundingClientRect().height;
       
+      // Set canvas dimensions with scaling factor
       canvas.width = svgWidth * options.scale;
       canvas.height = svgHeight * options.scale;
       
@@ -50,30 +52,36 @@ export const exportDiagram = async (
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
       
-      // Convert SVG to image
-      const img = new Image();
+      // Convert SVG to data URL
       const serializer = new XMLSerializer();
-      const svgBlob = new Blob([serializer.serializeToString(clone)], {type: 'image/svg+xml'});
+      const svgString = serializer.serializeToString(clone);
+      const svgBlob = new Blob([svgString], {type: 'image/svg+xml'});
       const url = URL.createObjectURL(svgBlob);
       
+      // Create image and draw to canvas when loaded
       return new Promise((resolve, reject) => {
+        const img = new Image();
+        
         img.onload = () => {
+          // Draw image to canvas
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           URL.revokeObjectURL(url);
           
           try {
-            // Convert canvas to PNG
-            const dataUrl = canvas.toDataURL('image/png');
+            // Convert canvas to PNG data URL
+            const pngData = canvas.toDataURL('image/png');
             
             // Create and trigger download
-            const downloadLink = document.createElement('a');
-            downloadLink.href = dataUrl;
-            downloadLink.download = `${fileName}.png`;
-            downloadLink.click();
+            const a = document.createElement('a');
+            a.href = pngData;
+            a.download = `${fileName}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
             
-            resolve(dataUrl);
-          } catch (error) {
-            reject(error);
+            resolve(pngData);
+          } catch (err) {
+            reject(err);
           }
         };
         
@@ -92,15 +100,15 @@ export const exportDiagram = async (
       const url = URL.createObjectURL(svgBlob);
       
       // Create and trigger download
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = `${fileName}.svg`;
-      downloadLink.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fileName}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       
       // Cleanup
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 100);
+      URL.revokeObjectURL(url);
       
       return url;
     }
@@ -129,10 +137,6 @@ export const generateThumbnail = async (elementId: string): Promise<string | nul
     // Reset transform
     clone.style.transform = '';
     
-    // Set dimensions
-    clone.setAttribute('width', '300');
-    clone.setAttribute('height', '200');
-    
     // Convert to canvas
     const canvas = document.createElement('canvas');
     canvas.width = 300;
@@ -148,14 +152,28 @@ export const generateThumbnail = async (elementId: string): Promise<string | nul
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Convert SVG to image
-    const img = new Image();
     const serializer = new XMLSerializer();
-    const svgBlob = new Blob([serializer.serializeToString(clone)], {type: 'image/svg+xml'});
+    const svgString = serializer.serializeToString(clone);
+    const svgBlob = new Blob([svgString], {type: 'image/svg+xml'});
     const url = URL.createObjectURL(svgBlob);
     
     return new Promise((resolve) => {
+      const img = new Image();
+      
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Calculate scaling to fit
+        const scale = Math.min(
+          canvas.width / img.width,
+          canvas.height / img.height
+        ) * 0.9; // 90% to add some padding
+        
+        const scaledWidth = img.width * scale;
+        const scaledHeight = img.height * scale;
+        const x = (canvas.width - scaledWidth) / 2;
+        const y = (canvas.height - scaledHeight) / 2;
+        
+        // Draw image centered and scaled
+        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
         URL.revokeObjectURL(url);
         
         try {
