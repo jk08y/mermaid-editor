@@ -5,7 +5,6 @@ import CodeEditor from '../components/Editor';
 import DiagramRenderer from '../components/DiagramRenderer';
 import { useDiagramStorage } from '../hooks/useDiagramStorage';
 import { generateThumbnail } from '../utils/exportDiagram';
-import { useTheme } from '../hooks/useTheme';
 
 // Define types for layout
 type LayoutType = 'split' | 'stacked' | 'editor-focus' | 'preview-focus';
@@ -295,6 +294,7 @@ const DiagramEditor = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleNew, handleSave, toggleLayout]);
+
   // Render loading state
   if (isLoading) {
     return (
