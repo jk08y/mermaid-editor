@@ -1,5 +1,5 @@
 // src/pages/DiagramEditor.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import CodeEditor from '../components/Editor';
 import DiagramRenderer from '../components/DiagramRenderer';
@@ -8,31 +8,79 @@ import { generateThumbnail } from '../utils/exportDiagram';
 import { useTheme } from '../hooks/useTheme';
 
 // Import templates and diagram types
-import { DiagramTemplate, DiagramType, ExportFormat } from '../types';
+import { DiagramTemplate } from '../types';
 
-const DiagramEditor: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+const DiagramEditor = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
   const { getDiagram, saveDiagram, isLoading } = useDiagramStorage();
   
   // Editor state
-  const [code, setCode] = useState<string>('');
-  const [title, setTitle] = useState<string>('Untitled Diagram');
-  const [autoSave, setAutoSave] = useState<boolean>(true);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [isDirty, setIsDirty] = useState<boolean>(false);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [code, setCode] = useState('');
+  const [title, setTitle] = useState('Untitled Diagram');
+  const [autoSave, setAutoSave] = useState(true);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('saved');
   
   // Layout settings
-  const [layout, setLayout] = useState<'split' | 'stacked' | 'editor-focus' | 'preview-focus'>('split');
-  const [showTemplates, setShowTemplates] = useState<boolean>(false);
-  const [showHelp, setShowHelp] = useState<boolean>(false);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [layout, setLayout] = useState('split');
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   
-  // Templates for quick start
-  const templates: DiagramTemplate[] = [
+  // Reference for auto-save timer
+  const autoSaveTimerRef = useRef(null);
+  
+  // Load diagram data on initial render
+  useEffect(() => {
+    const loadInitialData = () => {
+      if (id) {
+        const diagram = getDiagram(id);
+        if (diagram) {
+          setCode(diagram.content);
+          setTitle(diagram.title || 'Untitled Diagram');
+          setLastSaved(new Date(diagram.updatedAt));
+          setIsDirty(false);
+          setSaveStatus('saved');
+        } else {
+          // Diagram not found
+          navigate('/editor', { replace: true });
+        }
+      } else {
+        // Check for template in URL params
+        const params = new URLSearchParams(location.search);
+        const template = params.get('template');
+        
+        if (template) {
+          try {
+            setCode(decodeURIComponent(template));
+          } catch {
+            // Use default if template decoding fails
+            setDefaultDiagram();
+          }
+        } else {
+          // Set default diagram code
+          setDefaultDiagram();
+        }
+      }
+    };
+
+    loadInitialData();
+  }, [id]); // Only run when id changes
+  
+  // Set default diagram
+  const setDefaultDiagram = () => {
+    setCode(`graph TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> B`);
+  };
+  
+  // Templates for quick start - using useRef to avoid recreating on every render
+  const templates = useRef([
     {
       type: 'flowchart',
       name: 'Simple Flowchart',
@@ -92,53 +140,7 @@ const DiagramEditor: React.FC = () => {
     Complete --> [*]
     Error --> Idle: Retry`
     }
-  ];
-  
-  // Reference for auto-save timer
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Initialize editor with diagram data or template
-  useEffect(() => {
-    // Load diagram if ID provided
-    if (id) {
-      const diagram = getDiagram(id);
-      if (diagram) {
-        setCode(diagram.content);
-        setTitle(diagram.title || 'Untitled Diagram');
-        setLastSaved(new Date(diagram.updatedAt));
-        setIsDirty(false);
-        setSaveStatus('saved');
-      } else {
-        // Diagram not found
-        navigate('/editor', { replace: true });
-      }
-    } else {
-      // Check for template in URL params
-      const params = new URLSearchParams(location.search);
-      const template = params.get('template');
-      
-      if (template) {
-        try {
-          setCode(decodeURIComponent(template));
-        } catch {
-          // Use default if template decoding fails
-          setDefaultDiagram();
-        }
-      } else {
-        // Set default diagram code
-        setDefaultDiagram();
-      }
-    }
-  }, [id, getDiagram, navigate, location.search]);
-  
-  // Set default diagram
-  const setDefaultDiagram = () => {
-    setCode(`graph TD
-    A[Start] --> B{Is it working?}
-    B -->|Yes| C[Great!]
-    B -->|No| D[Debug]
-    D --> B`);
-  };
+  ]).current;
   
   // Set up auto-save
   useEffect(() => {
@@ -157,31 +159,40 @@ const DiagramEditor: React.FC = () => {
     return () => {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
       }
     };
-  }, [code, title, isDirty, autoSave]);
+  }, [isDirty, autoSave]); // Only re-run when these values change
   
   // Handle diagram changes
-  const handleCodeChange = (newCode: string) => {
+  const handleCodeChange = useCallback((newCode) => {
     setCode(newCode);
     setIsDirty(true);
     setSaveStatus('unsaved');
-  };
+  }, []);
   
   // Handle title changes
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTitleChange = useCallback((e) => {
     setTitle(e.target.value);
     setIsDirty(true);
     setSaveStatus('unsaved');
-  };
+  }, []);
   
   // Save diagram
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    if (!isDirty) return;
+    
     setSaveStatus('saving');
     
     try {
       // Generate thumbnail
-      const thumbnailUrl = await generateThumbnail('mermaid-diagram');
+      let thumbnailUrl = null;
+      try {
+        thumbnailUrl = await generateThumbnail('mermaid-diagram');
+      } catch (error) {
+        console.error('Failed to generate thumbnail:', error);
+        // Continue without thumbnail if generation fails
+      }
       
       // Save to storage
       const savedId = saveDiagram({
@@ -204,10 +215,10 @@ const DiagramEditor: React.FC = () => {
       console.error('Failed to save diagram:', error);
       setSaveStatus('unsaved');
     }
-  };
+  }, [id, isDirty, code, title, saveDiagram, navigate]);
   
   // Create new diagram
-  const handleNew = () => {
+  const handleNew = useCallback(() => {
     if (isDirty) {
       if (window.confirm('You have unsaved changes. Create new diagram anyway?')) {
         navigate('/editor');
@@ -215,10 +226,10 @@ const DiagramEditor: React.FC = () => {
     } else {
       navigate('/editor');
     }
-  };
+  }, [isDirty, navigate]);
   
   // Toggle layout
-  const toggleLayout = () => {
+  const toggleLayout = useCallback(() => {
     setLayout(prevLayout => {
       switch (prevLayout) {
         case 'split': return 'stacked';
@@ -228,10 +239,10 @@ const DiagramEditor: React.FC = () => {
         default: return 'split';
       }
     });
-  };
+  }, []);
   
   // Apply template
-  const applyTemplate = (templateCode: string) => {
+  const applyTemplate = useCallback((templateCode) => {
     if (isDirty) {
       if (window.confirm('You have unsaved changes. Apply template anyway?')) {
         setCode(templateCode);
@@ -244,11 +255,11 @@ const DiagramEditor: React.FC = () => {
       setSaveStatus('unsaved');
     }
     setShowTemplates(false);
-  };
+  }, [isDirty]);
   
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e) => {
       // Save: Ctrl/Cmd + S
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -284,7 +295,7 @@ const DiagramEditor: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isDirty]);
+  }, [handleNew, handleSave, toggleLayout]);
   
   // Render loading state
   if (isLoading) {
@@ -394,7 +405,7 @@ const DiagramEditor: React.FC = () => {
           
           {/* Primary actions */}
           <div className="flex flex-wrap gap-2">
-            <button 
+          <button 
               onClick={() => setShowTemplates(true)}
               className="btn btn-secondary btn-sm"
             >

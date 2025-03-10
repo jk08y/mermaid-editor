@@ -37,16 +37,9 @@ export const initializeMermaid = (theme: 'dark' | 'light') => {
       } : undefined,
     };
 
-    if (!isInitialized) {
-      mermaid.initialize(config);
-      isInitialized = true;
-    } else {
-      // Just update the theme if already initialized
-      mermaid.initialize({ 
-        ...config,
-        startOnLoad: false // Make sure we don't trigger auto-rendering
-      });
-    }
+    // Initialize only once
+    mermaid.initialize(config);
+    isInitialized = true;
   } catch (err) {
     console.error('Failed to initialize mermaid:', err);
   }

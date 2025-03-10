@@ -1,26 +1,12 @@
 // src/components/Editor.tsx
-import React, { useEffect, useRef, useState } from 'react';
-import MonacoEditor, { OnMount } from '@monaco-editor/react';
+import React, { useEffect, useRef } from 'react';
+import MonacoEditor from '@monaco-editor/react';
 import { useTheme } from '../hooks/useTheme';
-import { editor } from 'monaco-editor';
 
-interface CodeEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  height?: string;
-  language?: string;
-  readOnly?: boolean;
-  minimap?: boolean;
-  lineNumbers?: 'on' | 'off' | 'relative' | 'interval';
-  fontSize?: number;
-  wordWrap?: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
-}
-
-const CodeEditor: React.FC<CodeEditorProps> = ({
-  value,
-  onChange,
+const CodeEditor = ({ 
+  value, 
+  onChange, 
   height = '400px',
-  language = 'markdown',
   readOnly = false,
   minimap = false,
   lineNumbers = 'on',
@@ -28,21 +14,19 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   wordWrap = 'on'
 }) => {
   const { theme } = useTheme();
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const monacoRef = useRef<any>(null);
-  const [isReady, setIsReady] = useState(false);
-
-  // Configure Mermaid syntax highlighting
-  useEffect(() => {
-    if (!isReady || !monacoRef.current) return;
-
-    const monaco = monacoRef.current;
-
-    // Register Mermaid language if not already registered
-    if (!monaco.languages.getLanguages().some((lang: any) => lang.id === 'mermaid')) {
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+  
+  // Configure Monaco editor when it mounts
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    
+    // Configure Mermaid language
+    if (!monaco.languages.getLanguages().some(lang => lang.id === 'mermaid')) {
       monaco.languages.register({ id: 'mermaid' });
-
-      // Define Mermaid syntax highlighting rules
+      
+      // Define Mermaid syntax highlighting
       monaco.languages.setMonarchTokensProvider('mermaid', {
         tokenizer: {
           root: [
@@ -75,22 +59,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             
             // Special characters
             [/[:;|]/, 'delimiter'],
-            
-            // CSS style declarations
-            [/style\s+.*\s+fill/, 'attribute.name'],
-            [/#[0-9a-fA-F]+/, 'attribute.value'],
-            
-            // Classes and styles
-            [/\bclass\b/, 'keyword'],
-            [/\bstyle\b/, 'keyword'],
-            [/\bclassDef\b/, 'keyword'],
-            [/\bclick\b/, 'keyword'],
-            [/\blinkStyle\b/, 'keyword'],
           ]
         }
       });
-
-      // Set mermaid as default language for .mermaid files
+      
+      // Set language configuration
       monaco.languages.setLanguageConfiguration('mermaid', {
         comments: {
           lineComment: '%%',
@@ -107,13 +80,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           { open: '"', close: '"' },
           { open: '\'', close: '\'' },
         ],
-        surroundingPairs: [
-          { open: '{', close: '}' },
-          { open: '[', close: ']' },
-          { open: '(', close: ')' },
-          { open: '"', close: '"' },
-          { open: '\'', close: '\'' },
-        ],
         folding: {
           markers: {
             start: new RegExp('^\\s*subgraph|^\\s*graph|^\\s*sequenceDiagram|^\\s*classDiagram|^\\s*stateDiagram'),
@@ -122,36 +88,44 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       });
     }
-
-    // Set current language to mermaid
-    if (language === 'markdown' && editorRef.current) {
-      monaco.editor.setModelLanguage(editorRef.current.getModel()!, 'mermaid');
+    
+    // Set model language to mermaid
+    const model = editor.getModel();
+    if (model) {
+      monaco.editor.setModelLanguage(model, 'mermaid');
     }
-  }, [isReady, language]);
-
-  const handleEditorDidMount: OnMount = (editor, monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-    setIsReady(true);
-
-    // Add custom commands
+    
+    // Configure editor keybindings
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
-      editor.getAction('actions.find').run();
+      editor.getAction('actions.find')?.run();
     });
-
-    // Format document on Shift+Alt+F
+    
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () => {
       editor.getAction('editor.action.formatDocument')?.run();
     });
-
-    // Ctrl/Cmd + Enter to execute a custom action (like preview)
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      // Add any custom action here
-      console.log('Ctrl+Enter pressed');
-    });
     
-    // Focus the editor to enable immediate typing
+    // Focus the editor
     editor.focus();
+  };
+  
+  // Handlers for toolbar buttons
+  const handleIndentAll = () => {
+    if (!editorRef.current) return;
+    
+    const currentValue = editorRef.current.getValue();
+    const indentedValue = currentValue.split('\n').map(line => '    ' + line).join('\n');
+    editorRef.current.setValue(indentedValue);
+    onChange(indentedValue);
+  };
+  
+  const handleFormatCode = () => {
+    if (!editorRef.current) return;
+    editorRef.current.getAction('editor.action.formatDocument')?.run();
+  };
+  
+  const handleCopyCode = () => {
+    if (!editorRef.current) return;
+    navigator.clipboard.writeText(editorRef.current.getValue() || '');
   };
 
   return (
@@ -174,12 +148,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
         <div className="flex items-center space-x-1.5">
           <button
-            onClick={() => {
-              const currentValue = editorRef.current?.getValue() || '';
-              const indentedValue = currentValue.split('\n').map(line => '    ' + line).join('\n');
-              editorRef.current?.setValue(indentedValue);
-              onChange(indentedValue);
-            }}
+            onClick={handleIndentAll}
             className="p-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
             title="Indent All"
           >
@@ -188,7 +157,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             </svg>
           </button>
           <button
-            onClick={() => editorRef.current?.getAction('editor.action.formatDocument')?.run()}
+            onClick={handleFormatCode}
             className="p-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
             title="Format Code"
           >
@@ -197,9 +166,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             </svg>
           </button>
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(editorRef.current?.getValue() || '');
-            }}
+            onClick={handleCopyCode}
             className="p-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
             title="Copy Code"
           >
@@ -213,9 +180,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       <MonacoEditor
         height={height}
         language="mermaid"
-        value={value}
+        defaultValue={value}
         theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
-        onChange={(value) => onChange(value || '')}
+        onChange={onChange}
         onMount={handleEditorDidMount}
         options={{
           readOnly,
@@ -234,12 +201,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           renderIndentGuides: true,
           bracketPairColorization: {
             enabled: true,
-          },
-          suggest: {
-            showWords: true,
-            showSnippets: true,
-            showClasses: true,
-            showFunctions: true,
           },
           quickSuggestions: true,
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",

@@ -1,9 +1,7 @@
 // src/components/DiagramRenderer.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { useTheme } from '../hooks/useTheme';
-import { saveAs } from 'file-saver';
-import { toPng, toSvg } from 'html-to-image';
 
 interface DiagramRendererProps {
   code: string;
@@ -54,13 +52,13 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({
     renderDiagram();
   }, [theme]);
 
-  // Render diagram whenever code, zoom, or position changes
+  // Render diagram whenever code or theme changes
   useEffect(() => {
     renderDiagram();
-  }, [code, id, zoom, position]);
+  }, [code, id, theme]);
 
   // Function to render the diagram
-  const renderDiagram = () => {
+  const renderDiagram = useCallback(() => {
     setError(null);
     
     // Only try to render if there's code and the container exists
@@ -95,7 +93,16 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({
     } catch (error: any) {
       setError(`Failed to render diagram: ${error.message}`);
     }
-  };
+  }, [code, id, zoom, position]);
+
+  // Apply zoom and position when they change
+  useEffect(() => {
+    const svgElement = containerRef.current?.querySelector('svg');
+    if (svgElement) {
+      svgElement.style.transformOrigin = 'center';
+      svgElement.style.transform = `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`;
+    }
+  }, [zoom, position]);
 
   // Pan functionality
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -123,53 +130,110 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({
   };
 
   // Zoom controls
-  const zoomIn = () => {
+  const zoomIn = useCallback(() => {
     setZoom(prev => Math.min(prev + 0.1, 3));
-  };
+  }, []);
 
-  const zoomOut = () => {
+  const zoomOut = useCallback(() => {
     setZoom(prev => Math.max(prev - 0.1, 0.5));
-  };
+  }, []);
 
-  const resetView = () => {
+  const resetView = useCallback(() => {
     setZoom(1);
     setPosition({ x: 0, y: 0 });
-  };
+  }, []);
 
   // Handle wheel zoom
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
       setZoom(prev => Math.max(0.5, Math.min(prev + delta, 3)));
     }
-  };
+  }, []);
 
   // Export diagram
-  const exportDiagram = async (format: 'svg' | 'png') => {
+  const exportDiagram = useCallback(async (format: 'svg' | 'png') => {
     if (!containerRef.current) return;
     
     try {
-      if (format === 'svg') {
-        const dataUrl = await toSvg(containerRef.current, { backgroundColor: theme === 'dark' ? '#1e1e1e' : 'white' });
-        const blob = new Blob([dataUrl], { type: 'image/svg+xml;charset=utf-8' });
-        saveAs(blob, `${id}.svg`);
+      const svgElement = containerRef.current.querySelector('svg');
+      if (!svgElement) return;
+      
+      // Create a clone of the SVG for export to avoid modifying the displayed one
+      const clone = svgElement.cloneNode(true) as SVGElement;
+      
+      // Reset transform for export
+      clone.style.transform = '';
+      
+      // Set a white background for better visibility
+      clone.style.background = theme === 'dark' ? '#1e1e1e' : 'white';
+      
+      // For PNG export, we need to create a canvas
+      if (format === 'png') {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          console.error('Could not get canvas context');
+          return;
+        }
+        
+        // Set canvas dimensions
+        const svgWidth = svgElement.viewBox.baseVal.width || svgElement.getBoundingClientRect().width;
+        const svgHeight = svgElement.viewBox.baseVal.height || svgElement.getBoundingClientRect().height;
+        
+        canvas.width = svgWidth * 2; // Higher resolution
+        canvas.height = svgHeight * 2;
+        
+        // Draw background
+        ctx.fillStyle = theme === 'dark' ? '#1e1e1e' : 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Convert SVG to image
+        const img = new Image();
+        const serializer = new XMLSerializer();
+        const svgBlob = new Blob([serializer.serializeToString(clone)], {type: 'image/svg+xml'});
+        const url = URL.createObjectURL(svgBlob);
+        
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          
+          // Convert canvas to PNG and download
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const downloadLink = document.createElement('a');
+              downloadLink.href = URL.createObjectURL(blob);
+              downloadLink.download = `${id}.png`;
+              downloadLink.click();
+              URL.revokeObjectURL(downloadLink.href);
+            }
+          }, 'image/png');
+        };
+        
+        img.src = url;
       } else {
-        const dataUrl = await toPng(containerRef.current, { 
-          backgroundColor: theme === 'dark' ? '#1e1e1e' : 'white',
-          pixelRatio: 2
-        });
-        saveAs(dataUrl, `${id}.png`);
+        // SVG export is simpler
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(clone);
+        const svgBlob = new Blob([svgString], {type: 'image/svg+xml'});
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(svgBlob);
+        downloadLink.download = `${id}.svg`;
+        downloadLink.click();
+        URL.revokeObjectURL(downloadLink.href);
       }
     } catch (error: any) {
       console.error('Error exporting diagram:', error);
     }
-  };
+  }, [containerRef, id, theme]);
 
   // Toggle fullscreen
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
-  };
+  }, [isFullscreen]);
 
   return (
     <div 
@@ -221,7 +285,7 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({
 
       {/* Controls overlay */}
       {(showControls || isFullscreen) && !error && (
-        <div className="absolute bottom-3 right-3 flex flex-col space-y-2 opacity-0 hover:opacity-100 focus-within:opacity-100" style={{ transition: 'opacity 0.2s ease' }}>
+        <div className="absolute bottom-3 right-3 flex flex-col space-y-2">
           <div className="glass-effect rounded-lg p-1 shadow-elevation-2 flex flex-col space-y-1">
             <button 
               onClick={zoomIn} 
