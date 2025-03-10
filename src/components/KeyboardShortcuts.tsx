@@ -117,7 +117,7 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ onClose }) => {
               Pro Tip
             </h4>
             <p className="text-primary-600 dark:text-primary-400 text-sm">
-              Most Mermaid syntax follows simple patterns. For common diagram elements, you can use basic shortcuts. For example, in flowcharts, use <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">--></code> for arrows and <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">{`{}`}</code>, <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">{`[]`}</code>, or <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">{`()`}</code> for different node shapes.
+              Most Mermaid syntax follows simple patterns. For common diagram elements, you can use basic shortcuts. For example, in flowcharts, use <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">--&gt;</code> for arrows and <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">{'{}'}</code>, <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">[]</code>, or <code className="px-1.5 py-0.5 bg-primary-100 dark:bg-primary-800/50 rounded">()</code> for different node shapes.
             </p>
           </div>
         </div>
