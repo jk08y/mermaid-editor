@@ -36,7 +36,7 @@ const Navbar: React.FC = () => {
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
                 </svg>
                 <span className="ml-2 text-xl font-bold text-neutral-900 dark:text-white">
-                  Mermaid Editor
+                  Cs5
                   <span className="text-xs font-medium ml-1 bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300 py-0.5 px-1.5 rounded-full">Pro</span>
                 </span>
               </Link>
