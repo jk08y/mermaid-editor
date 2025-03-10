@@ -46,7 +46,7 @@ const Footer = () => {
             <a href="https://mermaid.js.org/intro/getting-started.html" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 dark:hover:text-primary-400">
               Documentation
             </a>
-            <a href="https://github.com/yourusername/mermaid-editor" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 dark:hover:text-primary-400">
+            <a href="https://github.com/jk08y/mermaid-editor" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 dark:hover:text-primary-400">
               GitHub
             </a>
             <span>© {new Date().getFullYear()} Mermaid Editor Pro</span>
@@ -78,15 +78,8 @@ const NotFound = () => {
 function App() {
   const { theme } = useTheme();
   
-  // Apply theme to document and initialize Mermaid
+  // Initialize Mermaid with current theme
   useEffect(() => {
-    // Update document theme class
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
     // Initialize Mermaid with current theme
     initializeMermaid(theme);
 

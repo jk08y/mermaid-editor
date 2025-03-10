@@ -1,4 +1,4 @@
-// src/pages/Home.tsx - with apostrophe fix
+// src/pages/Home.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DiagramTemplate, DiagramType } from '../types';
@@ -240,16 +240,20 @@ const Home: React.FC = () => {
             </div>
             <div className="lg:w-1/2 w-full">
               <div className="relative rounded-2xl overflow-hidden shadow-elevation-3 border border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface transition-all duration-300">
+                {/* Editor Header with Window Controls */}
+                <div className="flex items-center px-4 py-2 bg-neutral-100 dark:bg-dark-background border-b border-neutral-200 dark:border-dark-border">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <div className="mx-auto text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                    Mermaid Editor
+                  </div>
+                </div>
+                
                 <div className="flex">
                   <div className="w-1/2 border-r border-neutral-200 dark:border-dark-border p-4 bg-neutral-50 dark:bg-dark-background">
-                    <div className="flex items-center mb-2">
-                      <div className="flex space-x-1.5">
-                        <div className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-600"></div>
-                        <div className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-600"></div>
-                        <div className="w-3 h-3 rounded-full bg-neutral-300 dark:bg-neutral-600"></div>
-                      </div>
-                      <div className="ml-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium">Editor</div>
-                    </div>
                     <div className="font-mono text-sm text-neutral-800 dark:text-neutral-200 overflow-hidden whitespace-pre">
                       {templates[activeDemo].template}
                     </div>
@@ -286,7 +290,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Rest of the component continues as before */}
       {/* Features section */}
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">

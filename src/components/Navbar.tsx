@@ -113,7 +113,7 @@ const Navbar: React.FC = () => {
             </Link>
             
             <a
-              href="https://github.com/yourusername/mermaid-editor"
+              href="https://github.com/jk08y/mermaid-editor"
               target="_blank"
               rel="noopener noreferrer"
               className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hidden sm:block"
@@ -212,7 +212,7 @@ const Navbar: React.FC = () => {
             </div>
             <div className="flex items-center">
               <a
-                href="https://github.com/yourusername/mermaid-editor"
+                href="https://github.com/jk08y/mermaid-editor"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white mr-4"

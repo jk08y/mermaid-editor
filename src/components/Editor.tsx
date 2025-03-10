@@ -124,8 +124,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     // Set current language to mermaid
-    if (language === 'markdown') {
-      monaco.editor.setModelLanguage(editorRef.current?.getModel()!, 'mermaid');
+    if (language === 'markdown' && editorRef.current) {
+      monaco.editor.setModelLanguage(editorRef.current.getModel()!, 'mermaid');
     }
   }, [isReady, language]);
 
@@ -149,18 +149,21 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       // Add any custom action here
       console.log('Ctrl+Enter pressed');
     });
-
-    // Add editor actions to context menu
-    editor.onContextMenu(() => {
-      // Custom context menu could be added here
-    });
+    
+    // Focus the editor to enable immediate typing
+    editor.focus();
   };
 
   return (
     <div className="border border-neutral-200 dark:border-dark-border rounded-md overflow-hidden bg-white dark:bg-dark-surface shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="bg-neutral-50 dark:bg-dark-surface border-b border-neutral-200 dark:border-dark-border px-3 py-1.5 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          <div className="flex space-x-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          </div>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 ml-2">
             Mermaid Editor
           </span>
           {readOnly && (
@@ -209,7 +212,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
       <MonacoEditor
         height={height}
-        language={language}
+        language="mermaid"
         value={value}
         theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
         onChange={(value) => onChange(value || '')}

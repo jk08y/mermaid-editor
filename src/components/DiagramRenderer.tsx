@@ -49,45 +49,53 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({
         titleColor: '#d4d4d4',
       } : undefined,
     });
+    
+    // Re-render diagram when theme changes
+    renderDiagram();
   }, [theme]);
 
+  // Render diagram whenever code, zoom, or position changes
   useEffect(() => {
+    renderDiagram();
+  }, [code, id, zoom, position]);
+
+  // Function to render the diagram
+  const renderDiagram = () => {
     setError(null);
     
     // Only try to render if there's code and the container exists
-    if (code && containerRef.current) {
-      try {
-        const el = document.createElement('div');
-        el.id = id;
-        
-        // Clear previous content
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-          containerRef.current.appendChild(el);
-        }
-        
-        // Render the diagram
-        mermaid.render(id, code).then(({ svg }) => {
-          if (containerRef.current) {
-            containerRef.current.innerHTML = svg;
-            
-            // Add zoom transformation to the SVG
-            const svgElement = containerRef.current.querySelector('svg');
-            if (svgElement) {
-              svgElement.style.transformOrigin = 'center';
-              // Use direct style property instead of classes to avoid circular dependency
-              svgElement.style.transform = `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`;
-              svgElement.style.transition = 'transform 0.2s ease';
-            }
-          }
-        }).catch((err) => {
-          setError(`Error rendering diagram: ${err.message}`);
-        });
-      } catch (error: any) {
-        setError(`Failed to render diagram: ${error.message}`);
+    if (!code || !containerRef.current) return;
+    
+    try {
+      const el = document.createElement('div');
+      el.id = id;
+      
+      // Clear previous content
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(el);
       }
+      
+      // Render the diagram
+      mermaid.render(id, code).then(({ svg }) => {
+        if (containerRef.current) {
+          containerRef.current.innerHTML = svg;
+          
+          // Add zoom transformation to the SVG
+          const svgElement = containerRef.current.querySelector('svg');
+          if (svgElement) {
+            svgElement.style.transformOrigin = 'center';
+            svgElement.style.transform = `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`;
+            svgElement.style.transition = 'transform 0.2s ease';
+          }
+        }
+      }).catch((err) => {
+        setError(`Error rendering diagram: ${err.message}`);
+      });
+    } catch (error: any) {
+      setError(`Failed to render diagram: ${error.message}`);
     }
-  }, [code, id, zoom, position]);
+  };
 
   // Pan functionality
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -169,6 +177,20 @@ const DiagramRenderer: React.FC<DiagramRendererProps> = ({
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
+      {/* Header with window controls */}
+      <div className="bg-neutral-100 dark:bg-dark-background border-b border-neutral-200 dark:border-dark-border px-3 py-1.5 flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <div className="flex space-x-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          </div>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 ml-2">
+            Diagram Preview
+          </span>
+        </div>
+      </div>
+      
       {/* Diagram container */}
       <div 
         ref={diagramRef}

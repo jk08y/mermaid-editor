@@ -7,7 +7,7 @@ export const useTheme = () => {
   const getInitialTheme = (): ThemeType => {
     const savedTheme = localStorage.getItem('theme') as ThemeType | null;
     
-    if (savedTheme) {
+    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
       return savedTheme;
     }
     
@@ -19,10 +19,32 @@ export const useTheme = () => {
 
   const [theme, setTheme] = useState<ThemeType>(getInitialTheme);
 
-  // Update local storage when theme changes
+  // Apply theme to document and update local storage when theme changes
   useEffect(() => {
+    // Update local storage
     localStorage.setItem('theme', theme);
+    
+    // Update document theme class
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
+
+  // Listen for system preference changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = () => {
+      if (!localStorage.getItem('theme')) {
+        setTheme(mediaQuery.matches ? 'dark' : 'light');
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Toggle between light and dark themes
   const toggleTheme = () => {

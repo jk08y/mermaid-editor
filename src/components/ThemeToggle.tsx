@@ -5,15 +5,22 @@ import { useTheme } from '../hooks/useTheme';
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   
-  // Add transition effect when theme changes
+  // Apply theme changes to document immediately when theme changes
   useEffect(() => {
     const html = document.documentElement;
+    
+    if (theme === 'dark') {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+    
     html.classList.add('transition-colors', 'duration-200');
     
     return () => {
       html.classList.remove('transition-colors', 'duration-200');
     };
-  }, []);
+  }, [theme]);
 
   return (
     <button
