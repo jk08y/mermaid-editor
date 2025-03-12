@@ -50,7 +50,7 @@ npm run build
 
 The built files will be in the `dist` directory.
 
-## Usage
+## Usage 
 
 1. Navigate to the editor page
 2. Write your Mermaid syntax in the left panel
