@@ -1,6 +1,6 @@
-# Mermaid Editor Pro
+# Mermaid Editor Pro 
 
-A modern, browser-based editor for creating and managing Mermaid diagrams. Create, edit, and export diagrams using Mermaid's intuitive text-based syntax.
+A modern, browser-based editor for creating and managing Mermaid diagrams. Create, edit, and export diagrams using Mermaid's intuitive text-based syntax. 
 
 ## Features
 
